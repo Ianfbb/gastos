@@ -299,7 +299,7 @@ body.typing .fab{display:none}
 <script>
 (function(){
 "use strict";
-const VERSION='1.4', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
+const VERSION='1.4.1', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
 const $app=document.getElementById('app');
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-5);
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -489,7 +489,7 @@ function render(){
   const n=document.querySelector('.nav'); if(n)n.classList.toggle('scrolled',window.scrollY>28);
   if(focusId){const f=document.getElementById(focusId); focusId=null; if(f)f.focus();}
 }
-function go(view,extra){Object.assign(S,{view},extra||{}); S.keepScroll=false; render(); window.scrollTo(0,0);}
+function go(view,extra){Object.assign(S,{view},extra||{}); S.keepScroll=false; render(); window.scrollTo(0,0); if(S.pendienteRecarga&&['mes','anio','venc'].includes(view)){S.pendienteRecarga=false; window.__avisarVersion&&window.__avisarVersion();}}
 function nav(title,left,right){return h('div',{class:'nav'},h('div',{class:'nav-in'},left||h('span',{style:'width:44px'}),h('div',{class:'nav-title'},title),right||h('span',{style:'width:44px'})));}
 function barra(){
   $app.append(h('nav',{class:'tabbar three',role:'tablist'},[['mes','Este mes',I.mes],['anio','Año',I.anio],['venc','Vencimientos',I.cal]].map(([k,l,ic])=>h('button',{role:'tab','aria-selected':S.tab===k?'true':'false',onclick:()=>{S.tab=k; go(k,{mes:k==='mes'?S.mes:S.mes});}},svg(ic),l))));
@@ -817,7 +817,16 @@ function vAjustes(){
 /* ---------- arranque ---------- */
 load(); S.keepScroll=false; render();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
-  navigator.serviceWorker.register('sw.js').then(reg=>{reg.addEventListener('updatefound',()=>{const w=reg.installing; if(!w)return; w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)toast('Hay una versión nueva: cerrá y volvé a abrir la app');});});}).catch(()=>{});
+  const hadCtl=!!navigator.serviceWorker.controller;
+  // Cuando llega una versión nueva: aviso con botón para recargar en el momento (si no estás cargando algo).
+  const avisarVersion=()=>{if(S.view==='nuevo'||S.view==='cuenta'||S.view==='pagar'){S.pendienteRecarga=true; return;} saveNow();
+    document.querySelectorAll('.toast').forEach(e=>e.remove());
+    const t=h('div',{class:'toast act',role:'status'},h('span',null,'Hay una versión nueva'),h('button',{onclick:()=>location.reload()},'Actualizar'));
+    document.body.appendChild(t); setTimeout(()=>t.remove(),15000);};
+  window.__avisarVersion=avisarVersion;
+  // Al volver a la app, buscar actualización.
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{});});
+  navigator.serviceWorker.register('sw.js').then(reg=>{reg.addEventListener('updatefound',()=>{const w=reg.installing; if(!w)return; w.addEventListener('statechange',()=>{if(w.state==='activated'&&hadCtl)avisarVersion();});});}).catch(()=>{});
 }
 window.__D=()=>D; window.__ics=ics; window.__pend=pendientes;
 })();
