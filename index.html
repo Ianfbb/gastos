@@ -275,7 +275,7 @@ body.typing .fab{display:none}
 <script>
 (function(){
 "use strict";
-const VERSION='1.0', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
+const VERSION='1.1', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
 const $app=document.getElementById('app');
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-5);
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -306,23 +306,23 @@ const fechaCorta=f=>{const d=aFecha(f); return d.getDate()+' '+MESES[d.getMonth(
 const GRUPOS=[
   {id:'comida',nombre:'Comida',cats:[['super','Supermercado','SU'],['verduleria','Verdulería','VE'],['dietetica','Dietética','DI'],['afuera','Comer afuera','CA'],['hormiga','Gasto hormiga','GH']]},
   {id:'auto',nombre:'Auto',cats:[['nafta','Nafta','NA'],['seguro','Seguro','SE'],['extraauto','Extras auto','EA']]},
-  {id:'casa',nombre:'Casa',cats:[['luz','Luz','LU'],['gas','Gas','GA'],['abl','ABL','AB'],['internet','Internet y teléfono','IN'],['arreglos','Arreglos de la casa','AR'],['extracasa','Extras casa','EC']]},
+  {id:'casa',nombre:'Casa',cats:[['alquiler','Alquiler','AL'],['luz','Luz','LU'],['gas','Gas','GA'],['abl','ABL','AB'],['internet','Internet y teléfono','IN'],['arreglos','Arreglos de la casa','AR'],['extracasa','Extras casa','EC']]},
   {id:'personal',nombre:'Personal',cats:[['ropa','Ropa','RO'],['otros','Otros','OT']]}
 ];
 const CATS={}; GRUPOS.forEach(g=>g.cats.forEach(([id,n,m])=>{CATS[id]={id,nombre:n,mono:m,grupo:g.id};}));
 const catDe=id=>CATS[id]||CATS.otros;
 const mono=id=>{const c=catDe(id); return h('span',{class:'mono '+c.grupo,'aria-hidden':'true'},c.mono);};
-const ADIVINA=[[/seguro/i,'seguro'],[/\bluz\b|edenor|edesur/i,'luz'],[/\bgas\b|metrogas|naturgy/i,'gas'],[/abl|municipal|inmobiliario/i,'abl'],[/internet|tel[eé]fono|celular|fibertel|personal|movistar|claro|telecentro/i,'internet'],[/nafta|ypf|shell|axion/i,'nafta']];
-const SUGERIDOS=[['Seguro del auto','seguro'],['ABL','abl'],['Luz','luz'],['Gas','gas'],['Internet y teléfono','internet']];
+const ADIVINA=[[/seguro/i,'seguro'],[/\bluz\b|edenor|edesur/i,'luz'],[/\bgas\b|metrogas|naturgy/i,'gas'],[/abl|municipal|inmobiliario/i,'abl'],[/internet|tel[eé]fono|celular|fibertel|personal|movistar|claro|telecentro/i,'internet'],[/nafta|ypf|shell|axion/i,'nafta'],[/alquiler|expensas/i,'alquiler']];
+const SUGERIDOS=[['Alquiler','alquiler',{moneda:'USD',dia:5}],['Seguro del auto','seguro'],['ABL','abl'],['Luz','luz'],['Gas','gas'],['Internet y teléfono','internet']];
 
 /* ---------- datos ---------- */
-let D={schemaVersion:SCHEMA,movs:[],cuentas:[],meta:{lastBackup:0,hideInstall:false,avisar:5}};
+let D={schemaVersion:SCHEMA,movs:[],cuentas:[],meta:{lastBackup:0,hideInstall:false,avisar:5,dolar:1545,dolarFecha:''}};
 let bloqueado=false, rescate=null, saveT;
 const S={view:'mes',tab:'mes',mes:mesHoy(),cat:null,edit:null,draft:null,editList:false};
-function normCuenta(c){return Object.assign({id:uid(),nombre:'',cat:'otros',dia:10,frec:1,desde:mesHoy(),monto:'',avisar:5,pagos:{}},c,{pagos:(c&&c.pagos&&typeof c.pagos==='object')?c.pagos:{}});}
+function normCuenta(c){return Object.assign({id:uid(),nombre:'',cat:'otros',dia:10,frec:1,desde:mesHoy(),monto:'',moneda:'ARS',usd:'',avisar:5,pagos:{}},c,{pagos:(c&&c.pagos&&typeof c.pagos==='object')?c.pagos:{}});}
 function normMov(m){return Object.assign({id:uid(),fecha:hoy(),cat:'otros',monto:0,nota:'',cuenta:null},m,{monto:plata(m&&m.monto)});}
 function migrar(x){
-  const out={schemaVersion:SCHEMA,movs:[],cuentas:[],meta:Object.assign({lastBackup:0,hideInstall:false,avisar:5},(x.meta&&typeof x.meta==='object')?x.meta:{})};
+  const out={schemaVersion:SCHEMA,movs:[],cuentas:[],meta:Object.assign({lastBackup:0,hideInstall:false,avisar:5,dolar:1545,dolarFecha:''},(x.meta&&typeof x.meta==='object')?x.meta:{})};
   (Array.isArray(x.movs)?x.movs:[]).forEach(m=>{if(m&&m.id&&/^\d{4}-\d\d-\d\d$/.test(m.fecha||''))out.movs.push(normMov(m));});
   (Array.isArray(x.cuentas)?x.cuentas:[]).forEach(c=>{if(c&&c.id)out.cuentas.push(normCuenta(c));});
   return out;
@@ -343,7 +343,12 @@ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}c
 /* ---------- vencimientos ---------- */
 const aplica=(c,k)=>{const d=idxMes(k)-idxMes(c.desde); return d>=0&&d%(num(c.frec)||1)===0;};
 const venceEn=(c,k)=>k+'-'+pad(num(c.dia)>28?diasMes(k):Math.min(num(c.dia)||1,diasMes(k)));
-function ultimoMonto(c){const ks=Object.keys(c.pagos).sort(); for(let i=ks.length-1;i>=0;i--){const m=D.movs.find(x=>x.id===c.pagos[ks[i]]); if(m)return m.monto;} return plata(c.monto);}
+const esUSD=c=>c.moneda==='USD';
+const usd=n=>'US$ '+Math.round(n).toLocaleString('es-AR');
+const dolar=()=>plata(D.meta.dolar);
+// Monto aproximado en texto: en dólares muestra también su equivalente en pesos.
+const aprox=c=>esUSD(c)?(plata(c.usd)?usd(plata(c.usd))+(dolar()?' (≈ '+$(plata(c.usd)*dolar())+')':''):''):(ultimoMonto(c)?'≈ '+$(ultimoMonto(c)):'');
+function ultimoMonto(c){if(esUSD(c))return plata(c.usd)*dolar();const ks=Object.keys(c.pagos).sort(); for(let i=ks.length-1;i>=0;i--){const m=D.movs.find(x=>x.id===c.pagos[ks[i]]); if(m)return m.monto;} return plata(c.monto);}
 // Vencimientos sin pagar de este mes (también los vencidos) y del próximo si ya entraron en el aviso.
 function pendientes(){
   const out=[], k=mesHoy();
@@ -377,7 +382,7 @@ function icsEvento(c){
   const f=venceEn(c,mk).replace(/-/g,''), dia=num(c.dia)>28?'-1':String(num(c.dia)||1);
   const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
   const esc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
-  const avisar=Math.max(0,num(c.avisar)||5), monto=plata(c.monto)?' Aprox. '+$(plata(c.monto))+'.':'';
+  const avisar=Math.max(0,num(c.avisar)||5), monto=esUSD(c)?(plata(c.usd)?' '+usd(plata(c.usd))+' al dólar del día.':''):(plata(c.monto)?' Aprox. '+$(plata(c.monto))+'.':'');
   return ['BEGIN:VEVENT','UID:'+c.id+'@mis-gastos','DTSTAMP:'+stamp,'DTSTART:'+f+'T100000','DURATION:PT15M',
     'RRULE:FREQ=MONTHLY;INTERVAL='+(num(c.frec)||1)+';BYMONTHDAY='+dia,
     'SUMMARY:'+esc('Pagar '+c.nombre),'DESCRIPTION:'+esc('Vence el día '+(num(c.dia)>28?'último del mes':c.dia)+'.'+monto),
@@ -488,8 +493,8 @@ function vMes(){
   if(row.childNodes.length)tg.append(row);
   m.append(h('div',{class:'sec'},h('div',{class:'group'},tg)));
   if(esHoy&&pend.length){
-    m.append(sec('Por pagar',pend.map(p=>{const e=estadoTxt(p.d,p.f,num(p.c.avisar)); const est=ultimoMonto(p.c);
-      return h('div',{class:'cell'},mono(p.c.cat),h('div',{class:'t'},p.c.nombre||catDe(p.c.cat).nombre,h('span',{class:'s estado '+e.cls},e.txt+(est?' · ≈ '+$(est):''))),
+    m.append(sec('Por pagar',pend.map(p=>{const e=estadoTxt(p.d,p.f,num(p.c.avisar)); const est=aprox(p.c);
+      return h('div',{class:'cell'},mono(p.c.cat),h('div',{class:'t'},p.c.nombre||catDe(p.c.cat).nombre,h('span',{class:'s estado '+e.cls},e.txt+(est?' · '+est:''))),
         h('button',{class:'pill',onclick:()=>go('pagar',{edit:p.c.id,mesPago:p.mk})},'Pagar'));})));
   }
   if(!ms.length){
@@ -569,12 +574,12 @@ function vVenc(){
   const m=h('div',{class:'main'}); $app.append(m);
   if(!D.cuentas.length){
     m.append(h('div',{class:'empty'},h('b',null,'Cargá lo que pagás todos los meses'),'Con el día en que vence, la app te avisa '+D.meta.avisar+' días antes.'));
-    m.append(h('div',{class:'chips'},SUGERIDOS.map(([n,c])=>h('button',{class:'chip',onclick:()=>editarCuenta(null,{nombre:n,cat:c})},'+ '+n)),h('button',{class:'chip',onclick:()=>editarCuenta()},'+ Otro')));
+    m.append(h('div',{class:'chips'},SUGERIDOS.map(([n,c,x])=>h('button',{class:'chip',onclick:()=>editarCuenta(null,Object.assign({nombre:n,cat:c},x||{}))},'+ '+n)),h('button',{class:'chip',onclick:()=>editarCuenta()},'+ Otro')));
     barra(); return;
   }
   const cs=[...D.cuentas].sort((a,b)=>num(a.dia)-num(b.dia));
   m.append(sec(null,cs.map(c=>{const e=estadoCuenta(c);
-    return h('button',{class:'cell tap',onclick:()=>editarCuenta(c)},mono(c.cat),h('div',{class:'t'},c.nombre,h('span',{class:'s'},(num(c.dia)>28?'Último día del mes':'Día '+c.dia)+' · '+frecTxt(c)+(plata(c.monto)?' · ≈ '+$(plata(c.monto)):'')),h('span',{class:'s estado '+e.cls},e.txt)),svg(I.chev));})));
+    return h('button',{class:'cell tap',onclick:()=>editarCuenta(c)},mono(c.cat),h('div',{class:'t'},c.nombre,h('span',{class:'s'},(num(c.dia)>28?'Último día del mes':'Día '+c.dia)+' · '+frecTxt(c)+(aprox(c)?' · '+aprox(c):'')),h('span',{class:'s estado '+e.cls},e.txt)),svg(I.chev));})));
   const sinCal=D.cuentas.filter(c=>!c.enCalendario);
   m.append(h('div',{class:'sec'},h('div',{class:'group'},h('div',{class:'banner'},svg(I.bell),h('div',{class:'t'},
     h('b',null,sinCal.length?'Activá las alarmas en el Calendario':'Alarmas en el Calendario'),
@@ -606,7 +611,9 @@ function vCuenta(){
     cell(h('label',{class:'t',for:'cdia'},'Día en que vence'),inp(d,'dia',{cls:'box pc',mode:'numeric',id:'cdia',label:'Día del mes',noSave:true,onin:upd})),
     h('div',{class:'cell col'},h('span',null,'Cada cuánto'),seg([[1,'Todos los meses'],[2,'Cada 2 meses']],d.frec,v=>{d.frec=v; render();},'Frecuencia','full')),
     num(d.frec)===2?h('div',{class:'cell col'},h('span',null,'El próximo vence'),seg([[mesHoy(),'Este mes ('+nombreMes(mesHoy())+')'],[sumaMes(mesHoy(),1),'El mes que viene']],d.desde,v=>{d.desde=v; render();},'Primer mes','full')):null,
-    cell(h('label',{class:'t',for:'cmonto'},'Monto aproximado'),inp(d,'monto',{cls:'box r',money:true,id:'cmonto',ph:'$',noSave:true})),
+    h('div',{class:'cell col'},h('span',null,'Se paga en'),seg([['ARS','Pesos'],['USD','Dólares']],d.moneda,v=>{d.moneda=v; render();},'Moneda','full')),
+    esUSD(d)?cell(h('label',{class:'t',for:'cusd'},'Monto en dólares',h('span',{class:'s',id:'cequiv'},dolar()&&plata(d.usd)?'≈ '+$(plata(d.usd)*dolar())+' al dólar de '+$(dolar()):'Se pasa a pesos con el dólar del día de pago')),inp(d,'usd',{cls:'box r',money:true,id:'cusd',ph:'US$',noSave:true,onin:()=>{const e=document.getElementById('cequiv'); if(e)e.textContent=dolar()&&plata(d.usd)?'≈ '+$(plata(d.usd)*dolar())+' al dólar de '+$(dolar()):'Se pasa a pesos con el dólar del día de pago';}}))
+      :cell(h('label',{class:'t',for:'cmonto'},'Monto aproximado'),inp(d,'monto',{cls:'box r',money:true,id:'cmonto',ph:'$',noSave:true})),
     cell(h('label',{class:'t',for:'cavisar'},'Avisar antes'),inp(d,'avisar',{cls:'box pc',mode:'numeric',id:'cavisar',noSave:true}),h('span',{class:'v'},'días'))
   ],'Si vence el 29, 30 o 31, se toma el último día de cada mes.'));
   if(!S.nuevaCuenta){
@@ -621,19 +628,32 @@ function vCuenta(){
 /* ---------- Pagar ---------- */
 function vPagar(){
   const c=D.cuentas.find(x=>x.id===S.edit); if(!c){go('mes');return;}
-  const mk=S.mesPago||mesHoy(), f=venceEn(c,mk);
-  if(!S.pago||S.pago.id!==c.id+mk)S.pago={id:c.id+mk,monto:ultimoMonto(c),fecha:hoy()};
+  const mk=S.mesPago||mesHoy(), f=venceEn(c,mk), enUSD=esUSD(c);
+  if(!S.pago||S.pago.id!==c.id+mk)S.pago={id:c.id+mk,monto:enUSD?0:ultimoMonto(c),usd:plata(c.usd),tc:dolar(),fecha:hoy()};
   const p=S.pago;
+  const pesos=()=>enUSD?Math.round(plata(p.usd)*plata(p.tc)):plata(p.monto);
   $app.append(nav('Pagar '+c.nombre,h('button',{class:'navbtn',onclick:()=>go(S.tab)},'Cancelar')));
   $app.append(h('div',{class:'large'},h('h1',null,c.nombre),h('p',null,'Vence el '+fechaLarga(f))));
   const m=h('div',{class:'main nobar'}); $app.append(m);
-  m.append(h('div',{class:'sec'},h('div',{class:'group'},h('label',{class:'monto',for:'pmonto'},h('span',null,'$'),inp(p,'monto',{money:true,cls:'mi',id:'pmonto',ph:'0',label:'Monto pagado',noSave:true})))));
+  const eq=h('div',{class:'monto-cat',id:'peq'});
+  const verEq=()=>{eq.textContent=pesos()?'= '+$(pesos())+' en pesos':'Poné el dólar del día';};
+  if(enUSD){
+    m.append(h('div',{class:'sec'},h('div',{class:'group'},h('label',{class:'monto',for:'pusd'},h('span',null,'US$'),inp(p,'usd',{money:true,cls:'mi',id:'pusd',ph:'0',label:'Dólares pagados',noSave:true,onin:verEq})),eq)));
+    m.append(sec(null,[cell(h('label',{class:'t',for:'ptc'},'Dólar del día'),inp(p,'tc',{cls:'box r',money:true,id:'ptc',ph:'$',label:'Tipo de cambio',noSave:true,onin:verEq}))],'Con el valor al que compraste los dólares. Queda como referencia para el próximo mes.'));
+    verEq();
+  }else{
+    m.append(h('div',{class:'sec'},h('div',{class:'group'},h('label',{class:'monto',for:'pmonto'},h('span',null,'$'),inp(p,'monto',{money:true,cls:'mi',id:'pmonto',ph:'0',label:'Monto pagado',noSave:true})))));
+  }
   const fe=h('input',{type:'date',class:'tf date',id:'pfecha',value:p.fecha,max:hoy(),'aria-label':'Fecha de pago'}); fe.addEventListener('change',()=>{if(/^\d{4}-\d\d-\d\d$/.test(fe.value))p.fecha=fe.value;});
-  m.append(sec(null,[cell(h('label',{class:'t',for:'pfecha'},'Pagado el'),fe)],'Se suma a tus gastos de '+catDe(c.cat).nombre.toLowerCase()+'.'));
+  m.append(sec(null,[cell(h('label',{class:'t',for:'pfecha'},'Pagado el'),fe)],'Se suma a tus gastos de '+catDe(c.cat).nombre.toLowerCase()+' en pesos.'));
   m.append(h('div',{class:'sec'},h('button',{class:'pbtn',onclick:()=>{
-    if(!(p.monto>0)){toast('Poné cuánto pagaste');document.getElementById('pmonto').focus();return;}
-    const mv=normMov({fecha:p.fecha,cat:c.cat,monto:p.monto,nota:c.nombre,cuenta:c.id}); D.movs.push(mv); c.pagos[mk]=mv.id; saveNow(); S.pago=null;
-    go(S.tab); toast(c.nombre+' pagado','Deshacer',()=>{D.movs=D.movs.filter(x=>x!==mv); delete c.pagos[mk]; saveNow(); render();});}},'Marcar como pagado')));
+    if(!(pesos()>0)){toast(enUSD?'Poné los dólares y el dólar del día':'Poné cuánto pagaste'); document.getElementById(enUSD?(plata(p.usd)?'ptc':'pusd'):'pmonto').focus(); return;}
+    const extra=enUSD?{usd:plata(p.usd),tc:plata(p.tc),nota:c.nombre+' · '+usd(plata(p.usd))+' a '+$(plata(p.tc))}:{nota:c.nombre};
+    const mv=normMov(Object.assign({fecha:p.fecha,cat:c.cat,monto:pesos(),cuenta:c.id},extra)); D.movs.push(mv); c.pagos[mk]=mv.id;
+    const antes={dolar:D.meta.dolar,dolarFecha:D.meta.dolarFecha};
+    if(enUSD){D.meta.dolar=plata(p.tc); D.meta.dolarFecha=p.fecha;}
+    saveNow(); S.pago=null;
+    go(S.tab); toast(c.nombre+' pagado: '+$(mv.monto),'Deshacer',()=>{D.movs=D.movs.filter(x=>x!==mv); delete c.pagos[mk]; Object.assign(D.meta,antes); saveNow(); render();});}},'Marcar como pagado')));
   focusId=null;
 }
 
@@ -659,6 +679,7 @@ function vAjustes(){
   $app.append(nav('Ajustes',h('button',{class:'gbtn ic','aria-label':'Volver',onclick:()=>go(S.tab),html:I.back})));
   $app.append(h('div',{class:'large'},h('h1',null,'Ajustes')));
   const m=h('div',{class:'main nobar'}); $app.append(m);
+  m.append(sec('Dólar',[cell(h('label',{class:'t',for:'dolar'},'Dólar de referencia',h('span',{class:'s'},D.meta.dolarFecha?'Último pago en dólares: '+fechaLarga(D.meta.dolarFecha):'Para estimar lo que pagás en dólares')),inp(D.meta,'dolar',{cls:'box r',money:true,id:'dolar',ph:'$'}))],'Se actualiza solo cada vez que pagás algo en dólares.'));
   m.append(sec('Avisos',[cell(h('label',{class:'t',for:'avisar'},'Avisar antes del vencimiento'),inp(D.meta,'avisar',{cls:'box pc',mode:'numeric',id:'avisar'}),h('span',{class:'v'},'días'))],'Se usa para los vencimientos nuevos.'));
   m.append(sec('Copia de seguridad',[h('button',{class:'cell tap link',onclick:exportar},'Exportar copia'),h('button',{class:'cell tap link',onclick:()=>fileIn.click()},'Recuperar desde una copia')],
     (D.meta.lastBackup?'Última copia: '+new Date(D.meta.lastBackup).toLocaleDateString('es-AR')+'. ':'Todavía no hiciste ninguna copia. ')+'Tus gastos están solo en este iPhone: si borrás el ícono de la app, se borran.'));
