@@ -275,7 +275,7 @@ body.typing .fab{display:none}
 <script>
 (function(){
 "use strict";
-const VERSION='1.1', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
+const VERSION='1.2', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
 const $app=document.getElementById('app');
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-5);
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -528,7 +528,7 @@ function vCat(){
   if(!ms.length){m.append(h('div',{class:'empty'},'No hay gastos de '+c.nombre.toLowerCase()+' en '+nombreMes(S.mes)+'.'));return;}
   m.append(sec(null,ms.map(x=>S.editList
     ?cell(h('div',{class:'t'},$(x.monto),h('span',{class:'s'},fechaLarga(x.fecha)+(x.nota?' · '+x.nota:''))),h('button',{class:'delbtn',onclick:()=>borrarMov(x)},'Borrar'))
-    :h('button',{class:'cell tap',onclick:()=>nuevoGasto(x)},h('div',{class:'t'},x.nota||c.nombre,h('span',{class:'s'},fechaLarga(x.fecha))),h('span',{class:'v strong num'},$(x.monto)),svg(I.chev))),
+    :h('button',{class:'cell tap',onclick:()=>nuevoGasto(x)},h('div',{class:'t'},x.nota||c.nombre,h('span',{class:'s'},fechaLarga(x.fecha)+(x.usd?' · '+usd(x.usd)+' a '+$(x.tc):''))),h('span',{class:'v strong num'},$(x.monto)),svg(I.chev))),
     S.editList?'Si borrás uno por error, tocá Deshacer.':null));
   m.append(h('div',{class:'sec'},h('button',{class:'pbtn sec2',onclick:()=>nuevoGasto(null,S.cat)},'Agregar gasto de '+c.nombre.toLowerCase())));
 }
@@ -543,24 +543,39 @@ function nuevoGasto(mv,cat){
 }
 function vNuevo(){
   const d=S.draft, existe=D.movs.some(x=>x.id===d.id);
-  const ok=()=>d.cat&&d.monto>0;
+  if(!d.moneda)d.moneda=plata(d.usd)>0?'USD':'ARS';
+  if(d.moneda==='USD'&&!plata(d.tc))d.tc=dolar();
+  const enUSD=()=>d.moneda==='USD';
+  const pesos=()=>enUSD()?Math.round(plata(d.usd)*plata(d.tc)):plata(d.monto);
+  const ok=()=>d.cat&&pesos()>0;
   const guardar=h('button',{class:'navbtn b',disabled:!ok(),onclick:()=>{
-    if(!ok())return; const i=D.movs.findIndex(x=>x.id===d.id);
-    if(i>=0)D.movs[i]=normMov(d); else D.movs.push(normMov(d));
-    S.mes=mesDe(d.fecha); saveNow(); toast((existe?'Guardado: ':'Cargado: ')+catDe(d.cat).nombre+' '+$(d.monto)); go(S.volver);}},'Guardar');
-  const upd=()=>{guardar.disabled=!ok();};
+    if(!ok())return;
+    const mv=Object.assign({},d,{monto:pesos()}); delete mv.moneda;
+    if(enUSD()){mv.usd=plata(d.usd); mv.tc=plata(d.tc); D.meta.dolar=mv.tc; D.meta.dolarFecha=d.fecha;}else{delete mv.usd; delete mv.tc;}
+    const i=D.movs.findIndex(x=>x.id===d.id);
+    if(i>=0)D.movs[i]=normMov(mv); else D.movs.push(normMov(mv));
+    S.mes=mesDe(d.fecha); saveNow(); toast((existe?'Guardado: ':'Cargado: ')+catDe(d.cat).nombre+' '+$(mv.monto)); go(S.volver);}},'Guardar');
+  const eq=h('div',{class:'monto-cat',id:'montoeq'});
+  const upd=()=>{guardar.disabled=!ok(); if(enUSD())eq.textContent=pesos()?'= '+$(pesos())+' en pesos':'Poné el dólar del día';};
   $app.append(nav(existe?'Editar gasto':'Nuevo gasto',h('button',{class:'navbtn',onclick:()=>go(S.volver)},'Cancelar'),guardar));
   const m=h('div',{class:'main nobar'}); $app.append(m);
   const g=h('div',{class:'group'});
-  const mi=inp(d,'monto',{money:true,cls:'mi',id:'monto',ph:'0',label:'Monto',noSave:true,onin:upd});
-  g.append(h('label',{class:'monto',for:'monto'},h('span',null,'$'),mi));
+  g.append(h('div',{style:'display:flex;justify-content:center;padding:14px 16px 0'},seg([['ARS','Pesos'],['USD','Dólares']],d.moneda,v=>{d.moneda=v; d.monedaElegida=true; if(v==='USD'){if(!plata(d.tc))d.tc=dolar();} focusId='monto'; render();},'Moneda')));
+  const mi=enUSD()?inp(d,'usd',{money:true,cls:'mi',id:'monto',ph:'0',label:'Dólares',noSave:true,onin:upd}):inp(d,'monto',{money:true,cls:'mi',id:'monto',ph:'0',label:'Monto',noSave:true,onin:upd});
+  g.append(h('label',{class:'monto',for:'monto'},h('span',null,enUSD()?'US$':'$'),mi));
+  if(enUSD())g.append(eq);
   g.append(h('div',{class:'monto-cat',id:'montocat'},d.cat?catDe(d.cat).nombre:'Elegí una categoría'));
   m.append(h('div',{class:'sec'},g));
+  if(enUSD())m.append(sec(null,[cell(h('label',{class:'t',for:'tc'},'Dólar del día'),inp(d,'tc',{cls:'box r',money:true,id:'tc',ph:'$',label:'Tipo de cambio',noSave:true,onin:upd}))],'Se guarda en pesos a ese valor.'));
+  upd();
   GRUPOS.forEach(gr=>{
     m.append(h('div',{class:'grp'},gr.nombre));
     m.append(h('div',{class:'catgrid'},gr.cats.map(([id,n])=>h('button',{class:'catbtn','aria-pressed':d.cat===id?'true':'false',onclick:e=>{
-      d.cat=id; document.querySelectorAll('.catbtn').forEach(b=>b.setAttribute('aria-pressed','false')); e.currentTarget.setAttribute('aria-pressed','true');
-      document.getElementById('montocat').textContent=n; upd(); if(!d.monto){window.scrollTo({top:0,behavior:'smooth'}); mi.focus();}}},mono(id),n))));
+      d.cat=id;
+      // El alquiler se paga en dólares: si no elegiste moneda, cambia sola.
+      if(id==='alquiler'&&!d.monedaElegida&&d.moneda!=='USD'&&!plata(d.monto)){d.moneda='USD'; if(!plata(d.tc))d.tc=dolar(); focusId='monto'; S.keepScroll=false; render(); window.scrollTo(0,0); return;}
+      document.querySelectorAll('.catbtn').forEach(b=>b.setAttribute('aria-pressed','false')); e.currentTarget.setAttribute('aria-pressed','true');
+      document.getElementById('montocat').textContent=n; upd(); if(!pesos()){window.scrollTo({top:0,behavior:'smooth'}); mi.focus();}}},mono(id),n))));
   });
   const fe=h('input',{type:'date',class:'tf date',id:'fecha',value:d.fecha,max:hoy(),'aria-label':'Fecha'}); fe.addEventListener('change',()=>{if(/^\d{4}-\d\d-\d\d$/.test(fe.value))d.fecha=fe.value;});
   m.append(sec(null,[cell(h('label',{class:'t',for:'fecha'},'Fecha'),fe),cell(h('label',{class:'t',for:'nota'},'Nota'),inp(d,'nota',{cls:'tf',mode:'text',id:'nota',ph:'Opcional',noSave:true}))]));
