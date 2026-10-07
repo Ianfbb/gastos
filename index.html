@@ -275,7 +275,7 @@ body.typing .fab{display:none}
 <script>
 (function(){
 "use strict";
-const VERSION='1.2', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
+const VERSION='1.3', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
 const $app=document.getElementById('app');
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-5);
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -306,14 +306,14 @@ const fechaCorta=f=>{const d=aFecha(f); return d.getDate()+' '+MESES[d.getMonth(
 const GRUPOS=[
   {id:'comida',nombre:'Comida',cats:[['super','Supermercado','SU'],['verduleria','Verdulería','VE'],['dietetica','Dietética','DI'],['afuera','Comer afuera','CA'],['hormiga','Gasto hormiga','GH']]},
   {id:'auto',nombre:'Auto',cats:[['nafta','Nafta','NA'],['seguro','Seguro','SE'],['extraauto','Extras auto','EA']]},
-  {id:'casa',nombre:'Casa',cats:[['alquiler','Alquiler','AL'],['luz','Luz','LU'],['gas','Gas','GA'],['abl','ABL','AB'],['internet','Internet y teléfono','IN'],['arreglos','Arreglos de la casa','AR'],['extracasa','Extras casa','EC']]},
+  {id:'casa',nombre:'Casa',cats:[['alquiler','Alquiler','AL'],['luz','Luz','LU'],['gas','Gas','GA'],['agua','Agua (AySA)','AG'],['abl','ABL','AB'],['internet','Internet y teléfono','IN'],['arreglos','Arreglos de la casa','AR'],['extracasa','Extras casa','EC']]},
   {id:'personal',nombre:'Personal',cats:[['ropa','Ropa','RO'],['otros','Otros','OT']]}
 ];
 const CATS={}; GRUPOS.forEach(g=>g.cats.forEach(([id,n,m])=>{CATS[id]={id,nombre:n,mono:m,grupo:g.id};}));
 const catDe=id=>CATS[id]||CATS.otros;
 const mono=id=>{const c=catDe(id); return h('span',{class:'mono '+c.grupo,'aria-hidden':'true'},c.mono);};
-const ADIVINA=[[/seguro/i,'seguro'],[/\bluz\b|edenor|edesur/i,'luz'],[/\bgas\b|metrogas|naturgy/i,'gas'],[/abl|municipal|inmobiliario/i,'abl'],[/internet|tel[eé]fono|celular|fibertel|personal|movistar|claro|telecentro/i,'internet'],[/nafta|ypf|shell|axion/i,'nafta'],[/alquiler|expensas/i,'alquiler']];
-const SUGERIDOS=[['Alquiler','alquiler',{moneda:'USD',dia:5}],['Seguro del auto','seguro'],['ABL','abl'],['Luz','luz'],['Gas','gas'],['Internet y teléfono','internet']];
+const ADIVINA=[[/seguro/i,'seguro'],[/\bluz\b|edenor|edesur/i,'luz'],[/\bgas\b|metrogas|naturgy/i,'gas'],[/abl|municipal|inmobiliario/i,'abl'],[/internet|tel[eé]fono|celular|fibertel|personal|movistar|claro|telecentro/i,'internet'],[/nafta|ypf|shell|axion/i,'nafta'],[/alquiler|expensas/i,'alquiler'],[/aysa|agua/i,'agua']];
+const SUGERIDOS=[['Alquiler','alquiler',{moneda:'USD',dia:5}],['Seguro del auto','seguro'],['ABL','abl'],['Luz','luz'],['Gas','gas'],['AySA (agua)','agua'],['Internet y teléfono','internet']];
 
 /* ---------- datos ---------- */
 let D={schemaVersion:SCHEMA,movs:[],cuentas:[],meta:{lastBackup:0,hideInstall:false,avisar:5,dolar:1545,dolarFecha:''}};
