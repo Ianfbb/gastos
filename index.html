@@ -224,6 +224,12 @@ body.typing .tabbar,body.typing .acc{display:none}
 .mesnav{display:flex;align-items:center;gap:6px;max-width:720px;margin:0 auto;padding-inline:12px;padding-block:2px 4px}
 .mesnav h1{flex:1;min-width:0;margin:0;font-family:var(--fd);font-size:34px;line-height:41px;font-weight:700;letter-spacing:.37px}
 .mesnav h1 small{font-size:20px;font-weight:600;color:var(--label2);margin-left:6px}
+.aniosel{display:flex;align-items:center;gap:2px;max-width:720px;margin:0 auto;padding-inline:8px}
+.aniosel .anio-num{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--label2);min-width:52px;text-align:center}
+.aniosel .xbtn{width:44px;height:44px;color:var(--blue)}
+.aniosel .xbtn:disabled{color:var(--label3)}
+.aniosel .xbtn svg{width:20px;height:20px}
+.tabbar.three button{letter-spacing:-.25px;padding-inline:2px}
 .mesnav .xbtn{width:44px;height:44px;color:var(--blue)}
 .mesnav .xbtn:disabled{color:var(--label3)}
 .mesnav .xbtn svg{width:24px;height:24px}
@@ -286,7 +292,7 @@ body.typing .fab{display:none}
 .mdet .r{display:flex;align-items:center;gap:8px;font-size:15px}
 .mdet .r .t{flex:1}
 .mdet .r .v{font-variant-numeric:tabular-nums}
-.tabbar.three{width:min(calc(100% - 92px),380px);left:16px;transform:none}
+.tabbar.three{width:min(calc(100% - 88px),380px);left:16px;transform:none}
 @media (min-width:560px){.tabbar.three{left:50%;transform:translateX(calc(-50% - 38px))}.fab{left:calc(50% + 160px)}}
 .navbtn{height:44px;border:0;background:transparent;color:var(--blue);font-size:17px;padding-inline:4px;flex:none}
 .navbtn.b{font-weight:600}
@@ -299,7 +305,7 @@ body.typing .fab{display:none}
 <script>
 (function(){
 "use strict";
-const VERSION='1.4.1', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
+const VERSION='1.4.2', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
 const $app=document.getElementById('app');
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-5);
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -492,7 +498,7 @@ function render(){
 function go(view,extra){Object.assign(S,{view},extra||{}); S.keepScroll=false; render(); window.scrollTo(0,0); if(S.pendienteRecarga&&['mes','anio','venc'].includes(view)){S.pendienteRecarga=false; window.__avisarVersion&&window.__avisarVersion();}}
 function nav(title,left,right){return h('div',{class:'nav'},h('div',{class:'nav-in'},left||h('span',{style:'width:44px'}),h('div',{class:'nav-title'},title),right||h('span',{style:'width:44px'})));}
 function barra(){
-  $app.append(h('nav',{class:'tabbar three',role:'tablist'},[['mes','Este mes',I.mes],['anio','Año',I.anio],['venc','Vencimientos',I.cal]].map(([k,l,ic])=>h('button',{role:'tab','aria-selected':S.tab===k?'true':'false',onclick:()=>{S.tab=k; go(k,{mes:k==='mes'?S.mes:S.mes});}},svg(ic),l))));
+  $app.append(h('nav',{class:'tabbar three',role:'tablist'},[['mes','Este mes',I.mes],['anio','Estadísticas',I.anio],['venc','Vencimientos',I.cal]].map(([k,l,ic])=>h('button',{role:'tab','aria-selected':S.tab===k?'true':'false',onclick:()=>{S.tab=k; go(k,{mes:k==='mes'?S.mes:S.mes});}},svg(ic),l))));
   $app.append(h('button',{class:'fab','aria-label':'Agregar gasto',onclick:()=>nuevoGasto(),html:I.plus}));
 }
 
@@ -585,9 +591,11 @@ function vAnio(){
   const y=S.anio||Number(mesHoy().slice(0,4)), esEste=y===Number(mesHoy().slice(0,4));
   const hasta=esEste?Number(mesHoy().slice(5,7))-1:11;
   const A=datosAnio(y);
-  $app.append(nav(String(y),h('button',{class:'gbtn ic','aria-label':'Ajustes',onclick:()=>go('ajustes'),html:I.gear})));
-  $app.append(h('div',{class:'mesnav'},h('h1',null,'Año ',h('small',null,String(y))),
+  $app.append(nav('Estadísticas '+y,h('button',{class:'gbtn ic','aria-label':'Ajustes',onclick:()=>go('ajustes'),html:I.gear})));
+  $app.append(h('div',{class:'large'},h('h1',null,'Estadísticas')));
+  $app.append(h('div',{class:'aniosel'},
     h('button',{class:'xbtn','aria-label':'Año anterior',onclick:()=>{S.anio=y-1;S.selMes=null;render();},html:I.back}),
+    h('span',{class:'anio-num'},String(y)),
     h('button',{class:'xbtn','aria-label':'Año siguiente',disabled:esEste,onclick:()=>{S.anio=y+1;S.selMes=null;render();},html:I.fwd})));
   const m=h('div',{class:'main'}); $app.append(m);
   if(!A.tot){m.append(h('div',{class:'empty'},h('b',null,'Sin gastos en '+y),'A medida que cargues gastos, acá vas a ver en qué se va la plata y cómo cambia cada mes.'));barra();return;}
