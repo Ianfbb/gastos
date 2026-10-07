@@ -220,7 +220,7 @@ body.typing .tabbar,body.typing .acc{display:none}
 /* ---- Propio de Mis gastos ---- */
 [hidden]{display:none!important}
 :root{--g-comida:#34C759;--g-auto:#007AFF;--g-casa:#FF9500;--g-personal:#AF52DE}
-@media (prefers-color-scheme: dark){:root{--g-comida:#30D158;--g-auto:#0A84FF;--g-casa:#FF9F0A;--g-personal:#BF5AF2}}
+@media (prefers-color-scheme: dark){:root{--g-comida:#259B45;--g-auto:#0A84FF;--g-casa:#D4770A;--g-personal:#B65AE8}}
 .mesnav{display:flex;align-items:center;gap:6px;max-width:720px;margin:0 auto;padding-inline:12px;padding-block:2px 4px}
 .mesnav h1{flex:1;min-width:0;margin:0;font-family:var(--fd);font-size:34px;line-height:41px;font-weight:700;letter-spacing:.37px}
 .mesnav h1 small{font-size:20px;font-weight:600;color:var(--label2);margin-left:6px}
@@ -264,6 +264,30 @@ body.typing .tabbar,body.typing .acc{display:none}
 .fab:active{transform:scale(.95)}
 body.typing .fab{display:none}
 @media (min-width:500px){.tabbar.two{left:50%;transform:translateX(calc(-50% - 38px))}.fab{right:auto;left:calc(50% + 120px)}}
+.chart{padding:16px 12px 12px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .ax{fill:var(--label2);font-size:11px;letter-spacing:0;font-family:var(--f)}
+.chart .grid{stroke:var(--sep);stroke-width:1}
+.chart .hit{fill:transparent;cursor:pointer}
+.chart .col{transition:opacity .2s}
+.chart .col.off{opacity:.3}
+.donut{display:flex;justify-content:center;padding:20px 16px 8px}
+.donut svg{width:min(62vw,240px);height:auto}
+.donut .c1{font-family:var(--fd);font-weight:700;font-size:22px;fill:var(--label);letter-spacing:0}
+.donut .c2{font-size:12px;fill:var(--label2);letter-spacing:0}
+.sq{display:inline-block;width:12px;height:12px;border-radius:4px;flex:none}
+.sq.comida{background:var(--g-comida)}.sq.auto{background:var(--g-auto)}.sq.casa{background:var(--g-casa)}.sq.personal{background:var(--g-personal)}
+.leg{display:flex;align-items:center;gap:10px;width:100%}
+.leg .t{flex:1}
+.spark{width:60px;height:26px;flex:none}
+.spark path{fill:none;stroke:var(--label3);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.spark circle{fill:var(--blue);stroke:var(--card);stroke-width:2}
+.mdet{padding:4px 16px 14px;display:flex;flex-direction:column;gap:6px}
+.mdet .r{display:flex;align-items:center;gap:8px;font-size:15px}
+.mdet .r .t{flex:1}
+.mdet .r .v{font-variant-numeric:tabular-nums}
+.tabbar.three{width:min(calc(100% - 92px),380px);left:16px;transform:none}
+@media (min-width:560px){.tabbar.three{left:50%;transform:translateX(calc(-50% - 38px))}.fab{left:calc(50% + 160px)}}
 .navbtn{height:44px;border:0;background:transparent;color:var(--blue);font-size:17px;padding-inline:4px;flex:none}
 .navbtn.b{font-weight:600}
 .navbtn:disabled{color:var(--label3)}
@@ -275,7 +299,7 @@ body.typing .fab{display:none}
 <script>
 (function(){
 "use strict";
-const VERSION='1.3', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
+const VERSION='1.4', SCHEMA=1, LS='mis-gastos-v1', LS_RESCATE=LS+'-rescate';
 const $app=document.getElementById('app');
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-5);
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -410,6 +434,7 @@ const I={
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   mes:'<svg viewBox="0 0 26 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/></svg>',
+  anio:'<svg viewBox="0 0 26 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="12" r="9"/><path d="M13 3v9l6.4 6.4"/></svg>',
   cal:'<svg viewBox="0 0 26 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="18" height="16" rx="3.5"/><path d="M4 9.5h18M9 2.5v4M17 2.5v4"/><path d="m10 15 2 2 4-4"/></svg>',
   chev:'<svg class="chev" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg>',
   check:'<svg class="check" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 10.5 4.2 4.2 8.8-9.4"/></svg>',
@@ -459,7 +484,7 @@ window.addEventListener('scroll',()=>{const n=document.querySelector('.nav'); if
 
 function render(){
   outs=[]; const sy=window.scrollY; $app.innerHTML='';
-  ({mes:vMes,venc:vVenc,nuevo:vNuevo,cat:vCat,cuenta:vCuenta,pagar:vPagar,ajustes:vAjustes})[S.view]();
+  ({mes:vMes,anio:vAnio,venc:vVenc,nuevo:vNuevo,cat:vCat,cuenta:vCuenta,pagar:vPagar,ajustes:vAjustes})[S.view]();
   if(S.keepScroll)window.scrollTo(0,sy); S.keepScroll=true;
   const n=document.querySelector('.nav'); if(n)n.classList.toggle('scrolled',window.scrollY>28);
   if(focusId){const f=document.getElementById(focusId); focusId=null; if(f)f.focus();}
@@ -467,7 +492,7 @@ function render(){
 function go(view,extra){Object.assign(S,{view},extra||{}); S.keepScroll=false; render(); window.scrollTo(0,0);}
 function nav(title,left,right){return h('div',{class:'nav'},h('div',{class:'nav-in'},left||h('span',{style:'width:44px'}),h('div',{class:'nav-title'},title),right||h('span',{style:'width:44px'})));}
 function barra(){
-  $app.append(h('nav',{class:'tabbar two',role:'tablist'},[['mes','Este mes',I.mes],['venc','Vencimientos',I.cal]].map(([k,l,ic])=>h('button',{role:'tab','aria-selected':S.tab===k?'true':'false',onclick:()=>{S.tab=k; go(k,{mes:k==='mes'?S.mes:S.mes});}},svg(ic),l))));
+  $app.append(h('nav',{class:'tabbar three',role:'tablist'},[['mes','Este mes',I.mes],['anio','Año',I.anio],['venc','Vencimientos',I.cal]].map(([k,l,ic])=>h('button',{role:'tab','aria-selected':S.tab===k?'true':'false',onclick:()=>{S.tab=k; go(k,{mes:k==='mes'?S.mes:S.mes});}},svg(ic),l))));
   $app.append(h('button',{class:'fab','aria-label':'Agregar gasto',onclick:()=>nuevoGasto(),html:I.plus}));
 }
 
@@ -505,11 +530,99 @@ function vMes(){
     m.append(sec('En qué se fue',rows.map(([c,v])=>h('button',{class:'cell tap',onclick:()=>go('cat',{cat:c})},mono(c),
       h('div',{class:'barrow'},h('div',{class:'top'},h('b',null,catDe(c).nombre),h('span',null,$(v))),h('div',{class:'bar','aria-hidden':'true'},h('i',{style:'width:'+Math.max(2,v/max*100).toFixed(1)+'%'}))),svg(I.chev)))));
     const grupos=GRUPOS.map(g=>[g,suma(ms.filter(x=>catDe(x.cat).grupo===g.id))]).filter(x=>x[1]>0);
+    const todos=[...ms].sort((a,b)=>a.fecha<b.fecha?1:a.fecha>b.fecha?-1:0), ver=S.verTodos?todos:todos.slice(0,8);
+    const reg=ver.map(x=>h('button',{class:'cell tap',onclick:()=>nuevoGasto(x)},mono(x.cat),h('div',{class:'t'},x.nota||catDe(x.cat).nombre,h('span',{class:'s'},fechaCorta(x.fecha)+(x.nota?' · '+catDe(x.cat).nombre:'')+(x.usd?' · '+usd(x.usd):''))),h('span',{class:'v strong num'},$(x.monto))));
+    if(todos.length>8&&!S.verTodos)reg.push(h('button',{class:'cell tap link',onclick:()=>{S.verTodos=true;render();}},'Ver los '+todos.length+' gastos'));
+    m.append(sec('Todos los gastos',reg));
     if(grupos.length>1)m.append(sec('Por grupo',grupos.map(([g,v])=>cell(h('span',{class:'t'},g.nombre),h('span',{class:'v num'},Math.round(v/tot*100)+'%'),h('span',{class:'v strong num',style:'min-width:100px'},$(v))))));
   }
   barra();
 }
 function esIOSSafari(){return /iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!matchMedia('(display-mode: standalone)').matches;}
+
+/* ---------- Año ---------- */
+const INI=['E','F','M','A','M','J','J','A','S','O','N','D'];
+const compacto=n=>n>=1e6?'$'+(n/1e6).toLocaleString('es-AR',{maximumFractionDigits:1})+' M':n>=1e3?'$'+Math.round(n/1e3)+' mil':'$'+Math.round(n);
+function datosAnio(y){
+  const meses=[...Array(12)].map((_,i)=>{const k=y+'-'+pad(i+1), ms=movsMes(k), g={}; GRUPOS.forEach(gr=>{g[gr.id]=suma(ms.filter(x=>catDe(x.cat).grupo===gr.id));}); return {k,i,tot:suma(ms),g,ms};});
+  const tot=meses.reduce((t,m)=>t+m.tot,0);
+  const grupos=GRUPOS.map(gr=>({gr,v:meses.reduce((t,m)=>t+m.g[gr.id],0)})).filter(x=>x.v>0);
+  const cats={}; meses.forEach(m=>m.ms.forEach(x=>{cats[x.cat]=cats[x.cat]||Array(12).fill(0); cats[x.cat][m.i]+=x.monto;}));
+  return {meses,tot,grupos,cats};
+}
+function donut(grupos,tot){
+  const R=80,C=2*Math.PI*R,gap=grupos.length>1?3:0; let off=0;
+  const segs=grupos.map(({gr,v})=>{const len=v/tot*C, el='<circle cx="110" cy="110" r="'+R+'" fill="none" stroke="var(--g-'+gr.id+')" stroke-width="30" stroke-dasharray="'+Math.max(0,len-gap).toFixed(2)+' '+(C-Math.max(0,len-gap)).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 110 110)"/>'; off+=len; return el;}).join('');
+  return '<svg viewBox="0 0 220 220" role="img" aria-label="Reparto del año por grupo"><circle cx="110" cy="110" r="'+R+'" fill="none" stroke="var(--fill)" stroke-width="30"/>'+segs+'<text x="110" y="112" text-anchor="middle" class="c1">'+compacto(tot)+'</text><text x="110" y="132" text-anchor="middle" class="c2">en el año</text></svg>';
+}
+function columnas(meses,sel){
+  const W=340,H=170,top=8,base=H-22,left=40,slot=(W-left)/12,bw=Math.min(18,slot*0.6);
+  const max=Math.max(...meses.map(m=>m.tot),1);
+  const paso=[1,2,2.5,5].map(f=>f*Math.pow(10,Math.floor(Math.log10(max/3)))).find(p=>max/p<=4)||Math.pow(10,Math.ceil(Math.log10(max)));
+  const tope=Math.ceil(max/paso)*paso, Y=v=>base-(v/tope)*(base-top);
+  let g='';
+  for(let v=0;v<=tope+1e-6;v+=paso){g+='<line class="grid" x1="'+left+'" x2="'+W+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'"/><text class="ax" x="'+(left-6)+'" y="'+(Y(v)+4).toFixed(1)+'" text-anchor="end">'+(v?compacto(v).replace('$',''):'0')+'</text>';}
+  meses.forEach(m=>{
+    const cx=left+slot*m.i+slot/2, x=cx-bw/2; let y=base, partes=GRUPOS.filter(gr=>m.g[gr.id]>0);
+    let col='';
+    partes.forEach((gr,j)=>{
+      const hgt=(m.g[gr.id]/tope)*(base-top), ultimo=j===partes.length-1, y2=y-hgt;
+      if(ultimo){const r=Math.min(4,hgt,bw/2); col+='<path fill="var(--g-'+gr.id+')" d="M'+x+' '+y.toFixed(1)+'V'+(y2+r).toFixed(1)+'q0 -'+r+' '+r+' -'+r+'h'+(bw-2*r).toFixed(1)+'q'+r+' 0 '+r+' '+r+'V'+y.toFixed(1)+'z"/>';}
+      else{const h2=Math.max(0.5,hgt-2); col+='<rect fill="var(--g-'+gr.id+')" x="'+x+'" y="'+(y-hgt+2).toFixed(1)+'" width="'+bw+'" height="'+h2.toFixed(1)+'"/>';}
+      y=y2;});
+    g+='<g class="col'+(sel!=null&&sel!==m.i?' off':'')+'">'+col+'</g>';
+    g+='<text class="ax" x="'+cx+'" y="'+(H-6)+'" text-anchor="middle"'+(sel===m.i?' style="fill:var(--label);font-weight:600"':'')+'>'+INI[m.i]+'</text>';
+    g+='<rect class="hit" data-m="'+m.i+'" x="'+(left+slot*m.i)+'" y="0" width="'+slot+'" height="'+H+'"/>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gasto de cada mes por grupo">'+g+'</svg>';
+}
+function sparkline(arr,hasta){
+  const n=hasta+1, max=Math.max(...arr.slice(0,n),1), X=i=>2+i*(68/11), Y=v=>24-(v/max)*20;
+  const d=arr.slice(0,n).map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join('');
+  return '<svg class="spark" viewBox="0 0 72 26" aria-hidden="true"><path d="'+d+'"/><circle cx="'+X(hasta).toFixed(1)+'" cy="'+Y(arr[hasta]).toFixed(1)+'" r="3.5"/></svg>';
+}
+function vAnio(){
+  const y=S.anio||Number(mesHoy().slice(0,4)), esEste=y===Number(mesHoy().slice(0,4));
+  const hasta=esEste?Number(mesHoy().slice(5,7))-1:11;
+  const A=datosAnio(y);
+  $app.append(nav(String(y),h('button',{class:'gbtn ic','aria-label':'Ajustes',onclick:()=>go('ajustes'),html:I.gear})));
+  $app.append(h('div',{class:'mesnav'},h('h1',null,'Año ',h('small',null,String(y))),
+    h('button',{class:'xbtn','aria-label':'Año anterior',onclick:()=>{S.anio=y-1;S.selMes=null;render();},html:I.back}),
+    h('button',{class:'xbtn','aria-label':'Año siguiente',disabled:esEste,onclick:()=>{S.anio=y+1;S.selMes=null;render();},html:I.fwd})));
+  const m=h('div',{class:'main'}); $app.append(m);
+  if(!A.tot){m.append(h('div',{class:'empty'},h('b',null,'Sin gastos en '+y),'A medida que cargues gastos, acá vas a ver en qué se va la plata y cómo cambia cada mes.'));barra();return;}
+  const conDatos=A.meses.filter(x=>x.tot>0), prom=A.tot/Math.max(1,conDatos.length), maxM=conDatos.reduce((a,b)=>b.tot>a.tot?b:a);
+  m.append(h('div',{class:'sec'},h('div',{class:'group'},h('div',{class:'total'},h('span',{class:'k'},'Gastaste en '+y),h('span',{class:'big'},$(A.tot)),
+    h('div',{class:'row'},h('span',null,'Promedio ',h('b',null,$(prom)),' por mes'),h('span',null,'Más alto: ',h('b',null,cap(nombreMes(maxM.k))),' '+compacto(maxM.tot)))))));
+  // torta por grupo
+  const gr=[...A.grupos].sort((a,b)=>b.v-a.v);
+  const leg=gr.map(({gr:g,v})=>{const abierto=S.abreGrupo===g.id;
+    const fila=h('button',{class:'cell tap','aria-expanded':abierto?'true':'false',onclick:()=>{S.abreGrupo=abierto?null:g.id;render();}},h('div',{class:'leg'},h('span',{class:'sq '+g.id}),h('span',{class:'t'},g.nombre),h('span',{class:'v num'},Math.round(v/A.tot*100)+'%'),h('span',{class:'v strong num',style:'min-width:96px'},$(v))),svg(I.chev));
+    if(!abierto)return [fila];
+    const cs=Object.entries(A.cats).filter(([c])=>catDe(c).grupo===g.id).map(([c,arr])=>[c,arr.reduce((t,x)=>t+x,0)]).sort((a,b)=>b[1]-a[1]);
+    return [fila,...cs.map(([c,t])=>h('div',{class:'cell sub'},h('span',{class:'t'},catDe(c).nombre),h('span',{class:'v num'},Math.round(t/A.tot*100)+'%'),h('span',{class:'v num',style:'min-width:96px;color:var(--label)'},$(t))))];});
+  const dsec=h('div',{class:'sec'},h('div',{class:'sec-h'},h('span',null,'En qué se fue el año')),h('div',{class:'group'},h('div',{class:'donut',html:donut(gr,A.tot)}),...leg.flat()),h('div',{class:'sec-f'},'Tocá un grupo para ver sus categorías.'));
+  m.append(dsec);
+  // columnas mes a mes
+  const sel=S.selMes!=null?S.selMes:hasta;
+  const cg=h('div',{class:'group'});
+  const ch=h('div',{class:'chart',html:columnas(A.meses,sel)});
+  ch.addEventListener('click',e=>{const t=e.target.closest('.hit'); if(t){S.selMes=Number(t.dataset.m); render();}});
+  cg.append(ch);
+  const ms=A.meses[sel], prev=sel>0?A.meses[sel-1]:null;
+  const det=h('div',{class:'mdet'},h('div',{class:'r'},h('b',{class:'t'},cap(nombreMes(ms.k))),h('b',{class:'v'},$(ms.tot))));
+  if(prev&&prev.tot>0&&ms.tot>0){const d=(ms.tot-prev.tot)/prev.tot*100; det.append(h('div',{class:'r',style:'color:var(--label2)'},h('span',{class:'t'},'vs. '+nombreMes(prev.k)),h('span',{class:'v '+(d>0?'up':'down')},(d>0?'+':'')+Math.round(d)+'%')));}
+  GRUPOS.filter(g=>ms.g[g.id]>0).forEach(g=>det.append(h('div',{class:'r'},h('span',{class:'sq '+g.id}),h('span',{class:'t'},g.nombre),h('span',{class:'v'},$(ms.g[g.id])))));
+  if(ms.tot>0)det.append(h('button',{class:'pill',style:'align-self:flex-start;margin-top:4px',onclick:()=>{S.mes=ms.k;S.tab='mes';S.verTodos=false;go('mes');}},'Ver el detalle de '+nombreMes(ms.k)));
+  else det.append(h('span',{class:'estado'},'Sin gastos este mes'));
+  cg.append(det);
+  m.append(h('div',{class:'sec'},h('div',{class:'sec-h'},h('span',null,'Mes a mes')),cg,h('div',{class:'sec-f'},'Tocá un mes para ver su detalle. Los montos son en pesos de cada mes: con inflación, los meses viejos parecen más baratos.')));
+  // cómo cambió cada cosa
+  const filas=Object.entries(A.cats).map(([c,arr])=>({c,arr,t:arr.reduce((a,b)=>a+b,0)})).sort((a,b)=>b.t-a.t);
+  m.append(sec('Cómo cambió cada cosa',filas.map(f=>{const n=f.arr.slice(0,hasta+1).filter(v=>v>0).length;
+    return h('div',{class:'cell'},mono(f.c),h('div',{class:'t'},catDe(f.c).nombre,h('span',{class:'s num'},$(f.t/Math.max(1,n))+'/mes')),h('span',{html:sparkline(f.arr,hasta)}),h('span',{class:'v strong num',style:'min-width:92px'},$(f.t)));}),'Debajo de cada nombre, el promedio por mes. La línea muestra cada mes del año; el punto es '+nombreMes(A.meses[hasta].k)+'.'));
+  barra();
+}
 
 /* ---------- Categoría del mes ---------- */
 function borrarMov(mv){
